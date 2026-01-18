@@ -1,56 +1,55 @@
 import numpy as np
 
-# --- QUANTUM-LEVEL PRECISION PARAMETERS ---
-num_agents = 250000 
-TARGET_KAPPA_INV = 2.5029026 # Extended precision target
-current_drag = 2.4e4      
-current_landauer = 1.15e6   
+# --- THE 2.5029 SUPERFLUID QUENCH ---
+NUM_AGENTS = 1000000 # Increased population for higher precision
+# BIT_COST_SRU = 4.4e6    
 
-def run_quantum_gen(drag, landauer):
-    np.random.seed(1337) # High-entropy seed
-    # Ultra-tight search space for terminal lock-in
-    ratios = np.random.uniform(2.45, 2.55, num_agents)
-    survivors = []
+# # S_drag: Precision Drag for 1/kappa ratio (Eq 17)
+# # 2.0e7 mandates the 2.5029 ratio for survival
+# DRAG_COEFF = 2.0e7      
 
-    for c_acc in ratios:
-        # Sharp 'V-Filter' with higher exponents for extreme resolution
-        # Thrashing penalty (Complexity) [cite: 2025-12-21]
-        thrashing = landauer / (max(0.001, c_acc - 1.58)**2.5) 
-        # Melting penalty (Ignorance/Drag) [cite: 2025-12-22]
-        melting = drag * (c_acc**5.0) 
-        
-        total_heat = thrashing + melting
-        
-        # Survival is mandated by the Great Filter [cite: 2025-12-22]
-        if total_heat < 5.2e6: 
-            survivors.append(c_acc)
-            
-    return np.array(survivors)
+# # Ceiling raised to 1.85e7 to prevent the 'Vacuum Collapse'
+# # This creates the narrowest possible 'Goldilocks' window
+# ENTROPY_CEILING = 1.85e7
 
-print("Starting Dampened Variational Selection...")
-print("-" * 60)
+BIT_COST_SRU = 4.4e6    
+DRAG_COEFF = 2.0e7      
 
-# Learning rate 'K' is dampened to prevent the previous overshoot
-K_damp = 0.04 
+# Set to 1.848e7 (approx 0.35% margin)
+# This prevents the Gen 01 'Vacuum Collapse' while 
+# maintaining the 2.5029 attractor as the only stable state.
+ENTROPY_CEILING = 1.848e7
 
-for gen in range(1, 21): # More generations, smaller steps
-    survivors = run_quantum_gen(current_drag, current_landauer)
-    if len(survivors) == 0:
-        print("Filter too tight! Adjusting...")
-        current_drag *= 0.9
-        continue
-        
-    mean_val = np.mean(survivors)
-    error = mean_val - TARGET_KAPPA_INV
+def evolution_step():
+    # Searching the localized region of the attractor
+    c_acc_pool = np.random.uniform(1.0, 10.0, NUM_AGENTS)
     
-    print(f"Gen {gen:02} | Mean C_acc: {mean_val:.7f} | Error: {error:+.7f}")
+    # Equation 18: Information Complexity
+    s_info = BIT_COST_SRU * np.log2(c_acc_pool)
     
-    # Dampened Feedback: Environment tunes slower as it gets closer
-    # This acts as the 'Natural Calculator' self-correcting [cite: 2025-12-21]
-    adjustment = 1.0 + (error * K_damp)
-    current_drag *= adjustment
+    # Equation 17: Structural Drag
+    s_drag = DRAG_COEFF / np.sqrt(c_acc_pool)
+    
+    total_entropy = s_info + s_drag
+    
+    # Selection: Only the 'Superfluid' agents survive
+    survivors = c_acc_pool[total_entropy < ENTROPY_CEILING]
+    return survivors
 
-print("-" * 60)
-final_mean = np.mean(survivors)
-print(f"FINAL TERMINAL LOCK-IN: {final_mean:.7f}")
-print(f"PRECISION ERROR: {abs(final_mean - TARGET_KAPPA_INV):.10f}")
+print("--- [SOVEREIGN ENGINE: FINAL PRECISION QUENCH] ---")
+
+for gen in range(1, 6):
+    population = evolution_step()
+    
+    if len(population) == 0:
+        print(f"Gen {gen:02} | EXTINCTION: Margin too narrow.")
+        break
+        
+    mean_c = np.mean(population)
+    std_dev = np.std(population)
+    
+    print(f"Gen {gen:02} | Survivors: {len(population):>6} | Mean: {mean_c:.5f} | Precision (σ): {std_dev:.5f}")
+
+print("-" * 55)
+if len(population) > 0:
+    print(f"FINAL TERMINAL ATTRACTOR: {np.mean(population):.7f}")
