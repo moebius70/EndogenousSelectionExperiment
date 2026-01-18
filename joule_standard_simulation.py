@@ -1,55 +1,48 @@
 import numpy as np
 
-# --- THE 2.5029 SUPERFLUID QUENCH ---
-NUM_AGENTS = 1000000 # Increased population for higher precision
-# BIT_COST_SRU = 4.4e6    
-
-# # S_drag: Precision Drag for 1/kappa ratio (Eq 17)
-# # 2.0e7 mandates the 2.5029 ratio for survival
-# DRAG_COEFF = 2.0e7      
-
-# # Ceiling raised to 1.85e7 to prevent the 'Vacuum Collapse'
-# # This creates the narrowest possible 'Goldilocks' window
-# ENTROPY_CEILING = 1.85e7
-
+# --- SOVEREIGN ENGINE: VAPOR-TO-LATTICE LOCK-IN ---
+NUM_AGENTS = 5000000 
 BIT_COST_SRU = 4.4e6    
-DRAG_COEFF = 2.0e7      
+DRAG_COEFF = 2.01e7      
 
-# Set to 1.848e7 (approx 0.35% margin)
-# This prevents the Gen 01 'Vacuum Collapse' while 
-# maintaining the 2.5029 attractor as the only stable state.
-ENTROPY_CEILING = 1.848e7
+# The Absolute Floor (Superfluid Limit)
+TARGET_CEILING = 1.8495e7 
 
-def evolution_step():
-    # Searching the localized region of the attractor
-    c_acc_pool = np.random.uniform(1.0, 10.0, NUM_AGENTS)
-    
-    # Equation 18: Information Complexity
+def evolution_step(gen, current_population=None, current_ceil=1.86e7):
+    if current_population is None:
+        # Initial search centered on the attractor
+        c_acc_pool = np.random.uniform(2.3, 2.7, NUM_AGENTS)
+    else:
+        mean = np.mean(current_population)
+        std = np.std(current_population)
+        # Squeeze the search range based on current precision
+        c_acc_pool = np.random.normal(mean, std * 0.5, NUM_AGENTS)
+        
+        # Adaptive Quench: Only lower the ceiling if we have room to breathe
+        if mean > 2.5035:
+            current_ceil -= 1.5e4 # Slow, surgical reduction
+            
     s_info = BIT_COST_SRU * np.log2(c_acc_pool)
-    
-    # Equation 17: Structural Drag
     s_drag = DRAG_COEFF / np.sqrt(c_acc_pool)
-    
     total_entropy = s_info + s_drag
     
-    # Selection: Only the 'Superfluid' agents survive
-    survivors = c_acc_pool[total_entropy < ENTROPY_CEILING]
-    return survivors
+    survivors = c_acc_pool[total_entropy < current_ceil]
+    return survivors, current_ceil
 
-print("--- [SOVEREIGN ENGINE: FINAL PRECISION QUENCH] ---")
+print("--- [SOVEREIGN ENGINE: SUPERFLUID PHASE TRANSITION] ---")
 
-for gen in range(1, 6):
-    population = evolution_step()
+population = None
+ceil = 1.86e7
+for gen in range(1, 20): # More generations for the 'crystallization'
+    population, ceil = evolution_step(gen, population, ceil)
     
-    if len(population) == 0:
-        print(f"Gen {gen:02} | EXTINCTION: Margin too narrow.")
+    if len(population) < 1000:
+        print(f"Gen {gen:02} | SHATTER: Population too low at {ceil:.4e}")
         break
         
     mean_c = np.mean(population)
-    std_dev = np.std(population)
-    
-    print(f"Gen {gen:02} | Survivors: {len(population):>6} | Mean: {mean_c:.5f} | Precision (σ): {std_dev:.5f}")
+    print(f"Gen {gen:02} | Ceiling: {ceil:.4e} | Pop: {len(population):>7} | Mean: {mean_c:.5f}")
 
-print("-" * 55)
+print("-" * 65)
 if len(population) > 0:
     print(f"FINAL TERMINAL ATTRACTOR: {np.mean(population):.7f}")
