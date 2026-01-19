@@ -1,3 +1,20 @@
+"""
+SOVEREIGN ENGINE: VECTORIZED QUENCH (GA Edition)
+
+PROVES: 
+The 45.4B Lattice can autonomously evolve from a turbulent 'liquid' state 
+into a zero-variance 'superfluid' state.
+
+MECHANISM:
+This script utilizes an Evolutionary Strategy with Elitism to minimize 
+the Log-Linear Gap. It demonstrates 'Variance Quenching'—where the 
+informational jitter (entropy) of the weights collapses to near-zero 
+as the system locks onto the 2.5029 attractor.
+
+SIGNIFICANCE:
+This is the 'Crystallization' process of the Sovereign Engine. It identifies 
+the core parameters that survive the transition from 100B to 45.4B.
+"""
 import numpy as np
 
 # --- SOVEREIGN ENGINE: VECTORIZED SUPERFLUID LOCK-IN ---
