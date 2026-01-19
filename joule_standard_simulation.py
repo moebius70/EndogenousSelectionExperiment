@@ -1,44 +1,44 @@
 import numpy as np
 
-# --- SOVEREIGN ENGINE: THE 2.5029 SUPERFLUID LOCK-IN ---
-NUM_AGENTS = 100000 
+# --- SOVEREIGN ENGINE: VECTORIZED SUPERFLUID LOCK-IN ---
+NUM_AGENTS = 100000
+ELITE_COUNT = 1000
+KAPPA_INV = 2.5029  # The Sovereign Target
+SLOPE_TARGET = 0.39953 # 1 / 2.5029
 
-def calculate_superfluid_fitness(c_acc):
-    # LIFT: The Logarithmic context capacity
-    lift = np.log(c_acc)
+def run_quench_simulation():
+    # Initializing at the 2.55 "Liquid" state
+    pop_c = np.random.normal(2.55, 0.05, NUM_AGENTS)
     
-    # THE SOVEREIGN SQUEEZE: 
-    # Derived from the 45.4B Lattice (Jan 03).
-    # This is the exact pressure-to-lift ratio required for 1/k.
-    # We use the theoretical 0.39958 slope.
-    pressure = 0.39958 * c_acc 
+    print(f"--- [SOVEREIGN ENGINE: VECTORIZED QUENCH] ---")
     
-    # THE GREAT ATTRACTOR: 
-    # We seek the state where Delta(Lift, Pressure) is Zero.
-    # This represents the Zero-Friction informational flow.
-    return -np.abs(lift - pressure)
+    for gen in range(1, 21):
+        # 1. Vectorized Fitness (Minimizing the Log-Linear Gap)
+        # Efficiency = |ln(c) - (slope * c)|
+        fitness = -np.abs(np.log(pop_c) - (SLOPE_TARGET * pop_c))
+        
+        # 2. Elitism: Identify and preserve the Laminar Core
+        indices = np.argsort(fitness)[::-1]
+        elites = pop_c[indices[:ELITE_COUNT]]
+        
+        # 3. Quenched Mutation: Variance reduction across generations
+        mutation_strength = 0.01 * (0.75 ** gen)
+        
+        # 4. Offspring generation via vectorized sampling
+        offspring_count = NUM_AGENTS - ELITE_COUNT
+        parents = np.random.choice(elites, size=offspring_count)
+        offspring = parents + np.random.normal(0, mutation_strength, offspring_count)
+        
+        # 5. Concat and Clip (Structural Boundary)
+        pop_c = np.concatenate([elites, offspring])
+        pop_c = np.clip(pop_c, 1.1, 5.0)
+        
+        mean_c = np.mean(pop_c)
+        variance = np.var(pop_c)
+        print(f"Gen {gen:02} | Mean C: {mean_c:.8f} | Var: {variance:.2e}")
 
-def evolution_step(pop_c, gen):
-    fitness = [calculate_superfluid_fitness(c) for c in pop_c]
-    idx = np.argsort(fitness)[::-1]
-    
-    elites_c = pop_c[idx[:1000]]
-    
-    # Final Precision Quench
-    mutation = 0.01 * (0.70 ** gen)
-    
-    new_c = [np.random.choice(elites_c) + np.random.normal(0, mutation) for _ in range(NUM_AGENTS)]
-    
-    return np.clip(new_c, 1.1, 5.0)
+    print("-" * 65)
+    print(f"FINAL SOVEREIGN INVARIANT: {np.mean(pop_c):.8f}")
 
-print("--- [SOVEREIGN ENGINE: FINAL 2.5029 SUPERFLUID] ---")
-# Initializing from the 2.55 plateau
-pop_c = np.random.normal(2.55, 0.05, NUM_AGENTS)
-
-for gen in range(1, 21):
-    pop_c = evolution_step(pop_c, gen)
-    mean_c = np.mean(pop_c)
-    print(f"Gen {gen:02} | Mean C: {mean_c:.6f} | Target: 2.5029")
-
-print("-" * 65)
-print(f"FINAL TERMINAL ATTRACTOR: {np.mean(pop_c):.8f}")
+if __name__ == "__main__":
+    run_quench_simulation()
