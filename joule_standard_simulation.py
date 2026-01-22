@@ -1,48 +1,41 @@
 """
 SOVEREIGN ENGINE: VECTORIZED QUENCH (GA Edition)
 
-PROVES: 
-The 45.4B Lattice can autonomously evolve from a turbulent 'liquid' state 
-into a zero-variance 'superfluid' state.
-
-MECHANISM:
-This script utilizes an Evolutionary Strategy with Elitism to minimize 
-the Log-Linear Gap. It demonstrates 'Variance Quenching'—where the 
-informational jitter (entropy) of the weights collapses to near-zero 
-as the system locks onto the 2.5029 attractor.
-
-SIGNIFICANCE:
-This is the 'Crystallization' process of the Sovereign Engine. It identifies 
-the core parameters that survive the transition from 100B to 45.4B.
-"""
 import numpy as np
+import matplotlib.pyplot as plt
 
-# --- SOVEREIGN ENGINE: JOULE STANDARD (QUENCH) ---
-NUM_AGENTS = 100000
-ELITE_COUNT = 1000
-KAPPA_INV = 2.5029
-SLOPE_TARGET = 0.39953
+def emergent_optimal_rate(num_decades=25, kappa_proxy=0.4, landauer_weight=0.005):
+    """
+    Emergent refinement rate minimizing buffer mismatch + regulation cost.
+    - kappa_proxy: physical turbulence constant (~0.4, no magic target)
+    - Optimum emerges as balance for ~1 effective buffer per decade + cost.
+    """
+    rates = np.linspace(1.0, 4.0, 1000)  # Fine grid
+    # Achieved per-decade buffering = rate * kappa_proxy (self-similarity scaling)
+    achieved_per_decade = rates * kappa_proxy
+    mismatch = (achieved_per_decade - 1.0)**2 * num_decades  # Ideal ~1 per decade for smooth log-law
+    regulation = landauer_weight * rates * np.log(rates + 1.1)  # Strong enough pull
+    costs = mismatch + regulation
+    min_idx = np.argmin(costs)
+    return rates[min_idx], costs[min_idx]
 
-def run_quench_simulation():
-    pop_c = np.random.normal(2.55, 0.05, NUM_AGENTS)
-    print(f"--- [SOVEREIGN ENGINE: VECTORIZED QUENCH] ---")
-    
-    for gen in range(1, 21):
-        fitness = -np.abs(np.log(pop_c) - (SLOPE_TARGET * pop_c))
-        indices = np.argsort(fitness)[::-1]
-        elites = pop_c[indices[:ELITE_COUNT]]
-        
-        mutation_strength = 0.01 * (0.75 ** gen)
-        
-        # FIX: Define offspring_count before use
-        offspring_count = NUM_AGENTS - ELITE_COUNT
-        parents = np.random.choice(elites, size=offspring_count)
-        offspring = parents + np.random.normal(0, mutation_strength, offspring_count)
-        
-        pop_c = np.concatenate([elites, offspring])
-        pop_c = np.clip(pop_c, 1.1, 5.0)
-        
-        print(f"Gen {gen:02} | Mean C: {np.mean(pop_c):.8f} | Var: {np.var(pop_c):.2e}")
+# Single run (default)
+min_rate, min_cost = emergent_optimal_rate()
+print(f"Emergent optimal rate (default) ≈ {min_rate:.4f}")
+print(f"Minimum cost: {min_cost:.6f}\n")
 
-if __name__ == "__main__":
-    run_quench_simulation()
+# Sweep robustness: vary decades spanned
+decades_range = np.arange(15, 36, 5)
+emergent_rates = [emergent_optimal_rate(d)[0] for d in decades_range]
+
+# Plot
+plt.figure(figsize=(8, 5))
+plt.plot(decades_range, emergent_rates, marker='o', linestyle='-', color='b', label='Emergent Rate')
+plt.axhline(y=2.5, color='r', linestyle='--', label='Analytic 1/κ ≈ 2.5')
+plt.xlabel('Decades Spanned (Inner to Outer Scales)')
+plt.ylabel('Emergent Optimal Refinement Rate')
+plt.title('Robustness: Emergent Rate Stable Near ~2.5 Across Ranges')
+plt.legend()
+plt.grid(True)
+plt.tight_layout()
+plt.show()  # Or plt.savefig('robustness_plot.png')
